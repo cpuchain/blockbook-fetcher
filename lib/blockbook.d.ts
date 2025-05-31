@@ -70,6 +70,8 @@ export declare class Blockbook {
     getUtxo(addrOrXpubOrDesc: string, confirmed?: boolean): Promise<Utxo[]>;
     /** GET /api/v2/block/<block height|block hash> */
     getBlock(blockHeightOrHash: string | number): Promise<Block>;
+    /** GET /api/v2/rawblock/<block height|block hash> */
+    getRawBlock(blockHeightOrHash: string | number): Promise<string>;
     /** POST /api/v2/sendtx/ */
     sendTransaction(txhex: string): Promise<string>;
     /** GET /api/v2/tickers-list[?timestamp=] */
@@ -79,5 +81,5 @@ export declare class Blockbook {
     /** GET /api/v2/balancehistory/<XPUB | address>?...  */
     getBalanceHistory(addrOrXpub: string, opts?: GetBalanceHistoryOpts): Promise<BalanceHistory[]>;
     /** GET /api/v2/estimatefee/<blocks> */
-    estimatefee(blocks?: number): Promise<string>;
+    estimateFee(blocks?: number): Promise<string>;
 }

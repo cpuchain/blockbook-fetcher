@@ -283,7 +283,7 @@ export declare const VoutSchema: {
             type: string;
         };
         addresses: {
-            type: string;
+            type: string[];
             items: {
                 type: string;
             };
@@ -429,7 +429,7 @@ export declare const TxSchema: {
                         type: string;
                     };
                     addresses: {
-                        type: string;
+                        type: string[];
                         items: {
                             type: string;
                         };
@@ -949,7 +949,7 @@ export declare const AddressSchema: {
                                     type: string;
                                 };
                                 addresses: {
-                                    type: string;
+                                    type: string[];
                                     items: {
                                         type: string;
                                     };
@@ -1731,7 +1731,7 @@ export declare const BlockSchema: {
                                     type: string;
                                 };
                                 addresses: {
-                                    type: string;
+                                    type: string[];
                                     items: {
                                         type: string;
                                     };
@@ -2399,6 +2399,17 @@ export declare const EstimateFeesSchema: {
     type: string;
     properties: {
         result: {
+            type: string;
+        };
+        error: {
+            type: string;
+        };
+    };
+};
+export declare const RawBlockSchema: {
+    type: string;
+    properties: {
+        hex: {
             type: string;
         };
         error: {

@@ -1,6 +1,6 @@
 {
     "name": "blockbook-fetcher",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Blockbook API fetcher for Browser / Node.js",
     "license": "MIT",
     "author": "CPUchain",

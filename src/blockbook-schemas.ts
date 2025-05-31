@@ -123,7 +123,8 @@ export const VoutSchema = {
         hex: { type: 'string' },
         asm: { type: 'string' },
         addresses: {
-            type: 'array',
+            // Blockbook sometimes return null for ETH coins
+            type: ['array', 'null'],
             items: { type: 'string' },
         },
         isAddress: { type: 'boolean' },
@@ -596,6 +597,18 @@ export const EstimateFeesSchema = {
     type: 'object',
     properties: {
         result: {
+            type: 'string',
+        },
+        error: {
+            type: 'string',
+        },
+    },
+};
+
+export const RawBlockSchema = {
+    type: 'object',
+    properties: {
+        hex: {
             type: 'string',
         },
         error: {

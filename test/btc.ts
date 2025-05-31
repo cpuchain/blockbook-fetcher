@@ -46,6 +46,13 @@ describe('Blockbook Bitcoin API', () => {
         assert.ok(block.hash, 'Block should have a hash');
     });
 
+    it('getRawBlock returns correct raw block for latest height (only for BTC)', async () => {
+        const status = await blockbook.getStatus();
+        await sleep(1000);
+        const rawBlock: string = await blockbook.getRawBlock(status.backend.blocks as number);
+        assert.ok(typeof rawBlock === 'string', 'Has raw block');
+    });
+
     it('getTransaction returns data for a known transaction', async () => {
         const tx: Tx = await blockbook.getTransaction(TEST_BTC_TXID);
         assert.equal(tx.txid, TEST_BTC_TXID, 'TXID matches');
@@ -123,7 +130,7 @@ describe('Blockbook Bitcoin API', () => {
     });
 
     it('estimatefee returns estimated fee', async () => {
-        const fees = await blockbook.estimatefee();
+        const fees = await blockbook.estimateFee();
         assert.ok(typeof fees === 'string', 'Fees available');
         assert.ok(Number(fees) > 0.000000001, 'Fees available');
     });

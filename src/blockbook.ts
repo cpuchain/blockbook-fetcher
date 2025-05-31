@@ -24,6 +24,7 @@ import {
     SendTxSchema,
     GetBlockHashSchema,
     EstimateFeesSchema,
+    RawBlockSchema,
 } from './blockbook-schemas';
 
 export const DEFAULT_TIMEOUT = 60000;
@@ -225,6 +226,22 @@ export class Blockbook {
         );
     }
 
+    /** GET /api/v2/rawblock/<block height|block hash> */
+    async getRawBlock(blockHeightOrHash: string | number): Promise<string> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<{ hex?: string; error?: string }>(RawBlockSchema)
+            : undefined;
+        const { hex, error } = await fetchAndValidate<{ hex?: string; error?: string }>(
+            `${this.baseUrl}/api/v2/rawblock/${blockHeightOrHash}`,
+            this.fetchOptions,
+            validate,
+        );
+        if (error) {
+            throw new Error(JSON.stringify(error));
+        }
+        return hex as string;
+    }
+
     /** POST /api/v2/sendtx/ */
     async sendTransaction(txhex: string): Promise<string> {
         const validate = !this.disableTypeValidation
@@ -292,7 +309,7 @@ export class Blockbook {
     }
 
     /** GET /api/v2/estimatefee/<blocks> */
-    async estimatefee(blocks = 1): Promise<string> {
+    async estimateFee(blocks = 1): Promise<string> {
         const validate = !this.disableTypeValidation
             ? ajv.compile<{ result?: string; error?: string }>(EstimateFeesSchema)
             : undefined;
