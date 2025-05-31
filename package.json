@@ -1,0 +1,30 @@
+{
+    "name": "blockbook-fetcher",
+    "version": "1.0.0",
+    "description": "Blockbook API fetcher for Browser / Node.js",
+    "license": "MIT",
+    "author": "CPUchain",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "scripts": {
+        "update": "ts-node scripts/types.ts",
+        "lint": "eslint example.html scripts/**/*.ts src/**/*.ts test/**/*.ts",
+        "build": "tsc -p tsconfig.types.json --declaration && webpack",
+        "test": "node --test --require ts-node/register ./test/btc.ts ./test/eth.ts"
+    },
+    "devDependencies": {
+        "@cpuchain/eslint": "^1.0.5",
+        "@types/node": "^22.15.27",
+        "ajv": "^8.17.1",
+        "esbuild-loader": "^4.3.0",
+        "ts-node": "^10.9.2",
+        "tsc": "^2.0.4",
+        "typescript": "^5.8.3",
+        "webpack": "^5.99.9",
+        "webpack-cli": "^6.0.1"
+    },
+    "resolutions": {
+        "cookie": "^0.7.2",
+        "fast-glob": ">=3.3.3"
+    }
+}

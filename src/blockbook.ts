@@ -1,0 +1,308 @@
+import type { ValidateFunction } from 'ajv';
+/* eslint-disable prettier/prettier */
+import type {
+    SystemInfo,            // /api/status
+    Address,               // /api/v2/address
+    Tx,                    // /api/v2/tx
+    Block,                 // /api/v2/block
+    Utxo,                  // /api/v2/utxo
+    BalanceHistory,        // /api/v2/balancehistory
+    AvailableVsCurrencies, // /api/v2/tickers-list
+    FiatTicker,            // /api/v2/tickers
+} from './blockbook-api';
+/* eslint-enable prettier/prettier */
+import { ajv } from './ajv';
+import {
+    SystemInfoSchema,
+    BlockSchema,
+    TxSchema,
+    AddressSchema,
+    UtxoArraySchema,
+    BalanceHistoryArraySchema,
+    AvailableVsCurrenciesSchema,
+    FiatTickerSchema,
+    SendTxSchema,
+    GetBlockHashSchema,
+    EstimateFeesSchema,
+} from './blockbook-schemas';
+
+export const DEFAULT_TIMEOUT = 60000;
+
+export function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch API endpoint with schema validation using Ajv.
+ * @throws Error if response is not OK or schema validation fails.
+ */
+export async function fetchAndValidate<T>(
+    url: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    params: any,
+    validator?: ValidateFunction<T>,
+): Promise<T> {
+    const resp = await fetch(url, {
+        ...(params || {}),
+        signal: AbortSignal.timeout(params?.timeout || DEFAULT_TIMEOUT),
+    });
+
+    if (!resp.ok) {
+        throw new Error(`Failed to query Blockbook: ${resp.status} ${resp.statusText}`);
+    }
+
+    const json = await resp.json();
+
+    if (!validator || validator?.(json)) {
+        return json as T;
+    }
+
+    throw new Error('Blockbook schema error: ' + JSON.stringify(validator.errors));
+}
+
+/** Helper for query strings */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toQueryString(params?: Record<string, any>): string {
+    if (!params) {
+        return '';
+    }
+
+    const filteredEntries = Object.entries(params).filter(([, v]) => v !== undefined);
+
+    if (filteredEntries.length) {
+        return '';
+    }
+
+    return (
+        '?' +
+        filteredEntries
+            .map(([k, v]) =>
+                Array.isArray(v)
+                    ? v.map((i) => `${encodeURIComponent(k)}=${encodeURIComponent(i)}`).join('&')
+                    : `${encodeURIComponent(k)}=${encodeURIComponent(v)}`,
+            )
+            .join('&')
+    );
+}
+
+export interface GetAddressOpts {
+    page?: number;
+    pageSize?: number;
+    from?: number;
+    to?: number;
+    details?: 'basic' | 'tokens' | 'tokenBalances' | 'txids' | 'txslight' | 'txs';
+    contract?: string;
+    secondary?: string;
+}
+
+export interface GetXpubOpts {
+    page?: number;
+    pageSize?: number;
+    from?: number;
+    to?: number;
+    details?: 'basic' | 'tokens' | 'tokenBalances' | 'txids' | 'txs';
+    tokens?: 'derived' | 'used' | 'nonzero';
+    secondary?: string;
+}
+
+export interface GetBalanceHistoryOpts {
+    from?: number;
+    to?: number;
+    fiatcurrency?: string;
+    groupBy?: number;
+}
+
+/**
+ * Blockbook REST API class with Ajv validation for all endpoints.
+ */
+export interface BlockbookParams {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchOptions?: any;
+    disableTypeValidation?: boolean;
+}
+
+export class Blockbook {
+    readonly baseUrl: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    readonly fetchOptions?: any;
+    readonly disableTypeValidation?: boolean;
+
+    constructor(baseUrl: string, params?: BlockbookParams) {
+        // Remove trailing line
+        this.baseUrl = baseUrl.replace(/\/+$/, '');
+        this.fetchOptions = params?.fetchOptions;
+        this.disableTypeValidation = params?.disableTypeValidation;
+    }
+
+    /** GET /api/status */
+    async getStatus(): Promise<SystemInfo> {
+        const validate = ajv.compile<SystemInfo>(SystemInfoSchema);
+        return fetchAndValidate<SystemInfo>(
+            `${this.baseUrl}/api/status`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/block-index/<block height> */
+    async getBlockHash(blockHeight: number): Promise<{ blockHash: string }> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<{ blockHash: string }>(GetBlockHashSchema)
+            : undefined;
+        return fetchAndValidate<{ blockHash: string }>(
+            `${this.baseUrl}/api/v2/block-index/${blockHeight}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/tx/<txid> */
+    async getTransaction(txid: string): Promise<Tx> {
+        const validate = !this.disableTypeValidation ? ajv.compile<Tx>(TxSchema) : undefined;
+        return fetchAndValidate<Tx>(
+            `${this.baseUrl}/api/v2/tx/${txid}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/tx-specific/<txid> */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async getTransactionSpecific<T = any>(txid: string): Promise<T> {
+        // Accept any object (coin-specific, not normalized)
+        const schema = { type: 'object' };
+        const validate = !this.disableTypeValidation ? ajv.compile<T>(schema) : undefined;
+        return fetchAndValidate<T>(
+            `${this.baseUrl}/api/v2/tx-specific/${txid}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/address/<address> */
+    async getAddress(address: string, opts?: GetAddressOpts): Promise<Address> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<Address>(AddressSchema)
+            : undefined;
+        return fetchAndValidate<Address>(
+            `${this.baseUrl}/api/v2/address/${address}${toQueryString(opts)}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/xpub/<xpub|descriptor> */
+    async getXpub(xpubOrDescriptor: string, opts?: GetXpubOpts): Promise<Address> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<Address>(AddressSchema)
+            : undefined;
+        return fetchAndValidate<Address>(
+            `${this.baseUrl}/api/v2/xpub/${xpubOrDescriptor}${toQueryString(opts)}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/utxo/<addr or xpub or descriptor> */
+    async getUtxo(addrOrXpubOrDesc: string, confirmed?: boolean): Promise<Utxo[]> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<Utxo[]>(UtxoArraySchema)
+            : undefined;
+        return fetchAndValidate<Utxo[]>(
+            `${this.baseUrl}/api/v2/utxo/${addrOrXpubOrDesc}${toQueryString({ confirmed })}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/block/<block height|block hash> */
+    async getBlock(blockHeightOrHash: string | number): Promise<Block> {
+        const validate = !this.disableTypeValidation ? ajv.compile<Block>(BlockSchema) : undefined;
+        return fetchAndValidate<Block>(
+            `${this.baseUrl}/api/v2/block/${blockHeightOrHash}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** POST /api/v2/sendtx/ */
+    async sendTransaction(txhex: string): Promise<string> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<{ result?: string; error?: { message: string } }>(SendTxSchema)
+            : undefined;
+        const { result, error } = await fetchAndValidate<{
+            result?: string;
+            error?: { message: string };
+        }>(
+            `${this.baseUrl}/api/v2/sendtx/`,
+            {
+                ...this.fetchOptions,
+                method: 'POST',
+                headers: {
+                    ...(this.fetchOptions?.headers ?? {}),
+                    'Content-Type': 'text/plain',
+                },
+                body: txhex,
+            },
+            validate,
+        );
+        if (error) {
+            throw new Error(JSON.stringify(error));
+        }
+        return result as string;
+    }
+
+    /** GET /api/v2/tickers-list[?timestamp=] */
+    async getTickersList(timestamp?: number): Promise<AvailableVsCurrencies> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<AvailableVsCurrencies>(AvailableVsCurrenciesSchema)
+            : undefined;
+        return fetchAndValidate<AvailableVsCurrencies>(
+            `${this.baseUrl}/api/v2/tickers-list${toQueryString({ timestamp })}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/tickers[?currency=currency&timestamp=timestamp] */
+    async getTickers(currency?: string, timestamp?: number): Promise<FiatTicker> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<FiatTicker>(FiatTickerSchema)
+            : undefined;
+        return fetchAndValidate<FiatTicker>(
+            `${this.baseUrl}/api/v2/tickers${toQueryString({ currency, timestamp })}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/balancehistory/<XPUB | address>?...  */
+    async getBalanceHistory(
+        addrOrXpub: string,
+        opts?: GetBalanceHistoryOpts,
+    ): Promise<BalanceHistory[]> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<BalanceHistory[]>(BalanceHistoryArraySchema)
+            : undefined;
+        return fetchAndValidate<BalanceHistory[]>(
+            `${this.baseUrl}/api/v2/balancehistory/${addrOrXpub}${toQueryString(opts)}`,
+            this.fetchOptions,
+            validate,
+        );
+    }
+
+    /** GET /api/v2/estimatefee/<blocks> */
+    async estimatefee(blocks = 1): Promise<string> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<{ result?: string; error?: string }>(EstimateFeesSchema)
+            : undefined;
+        const { result, error } = await fetchAndValidate<{
+            result?: string;
+            error?: string;
+        }>(`${this.baseUrl}/api/v2/estimatefee/${blocks}`, this.fetchOptions, validate);
+        if (error) {
+            throw new Error(JSON.stringify(error));
+        }
+        return result as string;
+    }
+}
