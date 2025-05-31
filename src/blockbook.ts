@@ -70,7 +70,7 @@ export function toQueryString(params?: Record<string, any>): string {
 
     const filteredEntries = Object.entries(params).filter(([, v]) => v !== undefined);
 
-    if (filteredEntries.length) {
+    if (!filteredEntries.length) {
         return '';
     }
 
@@ -217,10 +217,10 @@ export class Blockbook {
     }
 
     /** GET /api/v2/block/<block height|block hash> */
-    async getBlock(blockHeightOrHash: string | number): Promise<Block> {
+    async getBlock(blockHeightOrHash: string | number, page?: number): Promise<Block> {
         const validate = !this.disableTypeValidation ? ajv.compile<Block>(BlockSchema) : undefined;
         return fetchAndValidate<Block>(
-            `${this.baseUrl}/api/v2/block/${blockHeightOrHash}`,
+            `${this.baseUrl}/api/v2/block/${blockHeightOrHash}${toQueryString({ page })}`,
             this.fetchOptions,
             validate,
         );

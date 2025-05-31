@@ -69,7 +69,7 @@ export declare class Blockbook {
     /** GET /api/v2/utxo/<addr or xpub or descriptor> */
     getUtxo(addrOrXpubOrDesc: string, confirmed?: boolean): Promise<Utxo[]>;
     /** GET /api/v2/block/<block height|block hash> */
-    getBlock(blockHeightOrHash: string | number): Promise<Block>;
+    getBlock(blockHeightOrHash: string | number, page?: number): Promise<Block>;
     /** GET /api/v2/rawblock/<block height|block hash> */
     getRawBlock(blockHeightOrHash: string | number): Promise<string>;
     /** POST /api/v2/sendtx/ */

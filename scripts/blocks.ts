@@ -4,7 +4,7 @@ import { Blockbook, sleep, Tx } from '../src';
 async function main() {
     const blockbook = new Blockbook('https://ltc1.trezor.io');
 
-    const latestBlock = ((await blockbook.getStatus()).backend.blocks) as number;
+    const latestBlock = (await blockbook.getStatus()).backend.blocks as number;
     await sleep(1000);
 
     /**
