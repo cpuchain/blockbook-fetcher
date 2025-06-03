@@ -40,6 +40,10 @@ export interface GetBalanceHistoryOpts {
     fiatcurrency?: string;
     groupBy?: number;
 }
+export interface GetUtxoOpts {
+    confirmed?: boolean;
+    gap?: number;
+}
 /**
  * Blockbook REST API class with Ajv validation for all endpoints.
  */
@@ -59,7 +63,7 @@ export declare class Blockbook {
         blockHash: string;
     }>;
     /** GET /api/v2/tx/<txid> */
-    getTransaction(txid: string): Promise<Tx>;
+    getTransaction(txid: string, spending?: boolean): Promise<Tx>;
     /** GET /api/v2/tx-specific/<txid> */
     getTransactionSpecific<T = any>(txid: string): Promise<T>;
     /** GET /api/v2/address/<address> */
@@ -67,7 +71,7 @@ export declare class Blockbook {
     /** GET /api/v2/xpub/<xpub|descriptor> */
     getXpub(xpubOrDescriptor: string, opts?: GetXpubOpts): Promise<Address>;
     /** GET /api/v2/utxo/<addr or xpub or descriptor> */
-    getUtxo(addrOrXpubOrDesc: string, confirmed?: boolean): Promise<Utxo[]>;
+    getUtxo(addrOrXpubOrDesc: string, opts?: GetUtxoOpts): Promise<Utxo[]>;
     /** GET /api/v2/block/<block height|block hash> */
     getBlock(blockHeightOrHash: string | number, page?: number): Promise<Block>;
     /** GET /api/v2/rawblock/<block height|block hash> */
@@ -75,7 +79,7 @@ export declare class Blockbook {
     /** POST /api/v2/sendtx/ */
     sendTransaction(txhex: string): Promise<string>;
     /** GET /api/v2/tickers-list[?timestamp=] */
-    getTickersList(timestamp?: number): Promise<AvailableVsCurrencies>;
+    getTickersList(timestamp: number): Promise<AvailableVsCurrencies>;
     /** GET /api/v2/tickers[?currency=currency&timestamp=timestamp] */
     getTickers(currency?: string, timestamp?: number): Promise<FiatTicker>;
     /** GET /api/v2/balancehistory/<XPUB | address>?...  */

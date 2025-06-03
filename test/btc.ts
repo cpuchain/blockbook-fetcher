@@ -4,7 +4,6 @@ import { Blockbook, sleep } from '../src';
 import type { Tx, Block, Utxo, Address, BalanceHistory, FiatTicker } from '../src';
 
 // A known real confirmed transaction on mainnet
-const TEST_BTC_TICKER = 'BTC';
 const TEST_BTC_TXID = '59963202a6c02916b4ae49ffe0bf1fe092a2b1b7a706a38a11cf634bb2c89857';
 const TEST_BTC_ADDR = '37jKPSmbEGwgfacCr2nayn1wTaqMAbA94Z';
 const TEST_BTC_XPUB =
@@ -114,7 +113,7 @@ describe('Blockbook Bitcoin API', () => {
     });
 
     it('getTickers returns fiat prices for BTC', async () => {
-        const tick: FiatTicker = await blockbook.getTickers(TEST_BTC_TICKER);
+        const tick: FiatTicker = await blockbook.getTickers('usd');
         assert.ok(typeof tick.rates['usd'] === 'number', 'USD price available');
         assert.ok(tick.ts && tick.ts > 1_600_000_000, 'Has a plausible timestamp');
     });

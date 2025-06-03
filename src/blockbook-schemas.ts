@@ -1,5 +1,109 @@
 /** blockbook-schemas.ts */
 
+export const BackendInfoSchema = {
+    type: 'object',
+    properties: {
+        error: { type: 'string' },
+        chain: { type: 'string' },
+        blocks: { type: 'number' },
+        headers: { type: 'number' },
+        bestBlockHash: { type: 'string' },
+        difficulty: { type: 'string' },
+        sizeOnDisk: { type: 'number' },
+        version: { type: 'string' },
+        subversion: { type: 'string' },
+        protocolVersion: { type: 'string' },
+        timeOffset: { type: 'number' },
+        warnings: { type: 'string' },
+        consensus_version: { type: 'string' },
+        consensus: {},
+    },
+};
+
+export const InternalStateColumnSchema = {
+    type: 'object',
+    properties: {
+        name: { type: 'string' },
+        version: { type: 'number' },
+        rows: { type: 'number' },
+        keyBytes: { type: 'number' },
+        valueBytes: { type: 'number' },
+        updated: { type: 'string' },
+    },
+    required: ['name', 'version', 'rows', 'keyBytes', 'valueBytes', 'updated'],
+};
+
+export const BlockbookInfoSchema = {
+    type: 'object',
+    properties: {
+        coin: { type: 'string' },
+        network: { type: 'string' },
+        host: { type: 'string' },
+        version: { type: 'string' },
+        gitCommit: { type: 'string' },
+        buildTime: { type: 'string' },
+        syncMode: { type: 'boolean' },
+        initialSync: { type: 'boolean' },
+        inSync: { type: 'boolean' },
+        bestHeight: { type: 'number' },
+        lastBlockTime: { type: 'string' },
+        inSyncMempool: { type: 'boolean' },
+        lastMempoolTime: { type: 'string' },
+        mempoolSize: { type: 'number' },
+        decimals: { type: 'number' },
+        dbSize: { type: 'number' },
+        hasFiatRates: { type: 'boolean' },
+        hasTokenFiatRates: { type: 'boolean' },
+        currentFiatRatesTime: { type: 'string' },
+        historicalFiatRatesTime: { type: 'string' },
+        historicalTokenFiatRatesTime: { type: 'string' },
+        supportedStakingPools: {
+            type: 'array',
+            items: { type: 'string' },
+        },
+        dbSizeFromColumns: { type: 'number' },
+        dbColumns: {
+            type: 'array',
+            items: InternalStateColumnSchema,
+        },
+        about: { type: 'string' },
+    },
+    required: [
+        'coin',
+        'network',
+        'host',
+        'version',
+        'gitCommit',
+        'buildTime',
+        'syncMode',
+        'initialSync',
+        'inSync',
+        'bestHeight',
+        'lastBlockTime',
+        'inSyncMempool',
+        'lastMempoolTime',
+        'mempoolSize',
+        'decimals',
+        'dbSize',
+        'about',
+    ],
+};
+
+export const SystemInfoSchema = {
+    type: 'object',
+    properties: {
+        blockbook: BlockbookInfoSchema,
+        backend: BackendInfoSchema,
+    },
+    required: ['blockbook', 'backend'],
+};
+
+export const GetBlockHashSchema = {
+    type: 'object',
+    properties: { blockHash: { type: 'string' } },
+    required: ['blockHash'],
+};
+
 export const APIErrorSchema = {
     type: 'object',
     properties: {
@@ -196,6 +300,18 @@ export const TxSchema = {
     required: ['txid', 'vin', 'vout', 'blockHeight', 'confirmations', 'blockTime', 'value'],
 };
 
+export const ErrorSchema = {
+    type: 'object',
+    properties: {
+        error: { type: 'string' },
+    },
+    required: ['error'],
+};
+
+export const TxSchemaOrError = {
+    oneOf: [TxSchema, ErrorSchema],
+};
+
 export const FeeStatsSchema = {
     type: 'object',
     properties: {
@@ -330,6 +446,10 @@ export const AddressSchema = {
     required: ['address', 'balance', 'unconfirmedBalance', 'unconfirmedTxs', 'txs'],
 };
 
+export const AddressSchemaOrError = {
+    oneOf: [AddressSchema, ErrorSchema],
+};
+
 export const UtxoSchema = {
     type: 'object',
     properties: {
@@ -346,31 +466,14 @@ export const UtxoSchema = {
     required: ['txid', 'vout', 'value', 'confirmations'],
 };
 
-export const UtxoArraySchema = {
-    type: 'array',
-    items: UtxoSchema,
-};
-
-export const BalanceHistorySchema = {
-    type: 'object',
-    properties: {
-        time: { type: 'number' },
-        txs: { type: 'number' },
-        received: { type: 'string' },
-        sent: { type: 'string' },
-        sentToSelf: { type: 'string' },
-        rates: {
-            type: 'object',
-            additionalProperties: { type: 'number' },
+export const UtxoArraySchemaOrError = {
+    oneOf: [
+        {
+            type: 'array',
+            items: UtxoSchema,
         },
-        txid: { type: 'string' },
-    },
-    required: ['time', 'txs', 'received', 'sent', 'sentToSelf'],
-};
-
-export const BalanceHistoryArraySchema = {
-    type: 'array',
-    items: BalanceHistorySchema,
+        ErrorSchema,
+    ],
 };
 
 export const BlockInfoSchema = {
@@ -443,7 +546,11 @@ export const BlockSchema = {
     ],
 };
 
-export const BlockRawSchema = {
+export const BlockSchemaOrError = {
+    oneOf: [BlockSchema, ErrorSchema],
+};
+
+export const RawBlockSchema = {
     type: 'object',
     properties: {
         hex: { type: 'string' },
@@ -451,102 +558,34 @@ export const BlockRawSchema = {
     required: ['hex'],
 };
 
-export const BackendInfoSchema = {
+export const RawBlockSchemaOrError = {
+    oneOf: [RawBlockSchema, ErrorSchema],
+};
+
+export const SendTxSchema = {
     type: 'object',
     properties: {
-        error: { type: 'string' },
-        chain: { type: 'string' },
-        blocks: { type: 'number' },
-        headers: { type: 'number' },
-        bestBlockHash: { type: 'string' },
-        difficulty: { type: 'string' },
-        sizeOnDisk: { type: 'number' },
-        version: { type: 'string' },
-        subversion: { type: 'string' },
-        protocolVersion: { type: 'string' },
-        timeOffset: { type: 'number' },
-        warnings: { type: 'string' },
-        consensus_version: { type: 'string' },
-        consensus: {},
+        result: { type: 'string' },
     },
 };
 
-export const InternalStateColumnSchema = {
-    type: 'object',
-    properties: {
-        name: { type: 'string' },
-        version: { type: 'number' },
-        rows: { type: 'number' },
-        keyBytes: { type: 'number' },
-        valueBytes: { type: 'number' },
-        updated: { type: 'string' },
-    },
-    required: ['name', 'version', 'rows', 'keyBytes', 'valueBytes', 'updated'],
-};
-
-export const BlockbookInfoSchema = {
-    type: 'object',
-    properties: {
-        coin: { type: 'string' },
-        network: { type: 'string' },
-        host: { type: 'string' },
-        version: { type: 'string' },
-        gitCommit: { type: 'string' },
-        buildTime: { type: 'string' },
-        syncMode: { type: 'boolean' },
-        initialSync: { type: 'boolean' },
-        inSync: { type: 'boolean' },
-        bestHeight: { type: 'number' },
-        lastBlockTime: { type: 'string' },
-        inSyncMempool: { type: 'boolean' },
-        lastMempoolTime: { type: 'string' },
-        mempoolSize: { type: 'number' },
-        decimals: { type: 'number' },
-        dbSize: { type: 'number' },
-        hasFiatRates: { type: 'boolean' },
-        hasTokenFiatRates: { type: 'boolean' },
-        currentFiatRatesTime: { type: 'string' },
-        historicalFiatRatesTime: { type: 'string' },
-        historicalTokenFiatRatesTime: { type: 'string' },
-        supportedStakingPools: {
-            type: 'array',
-            items: { type: 'string' },
+export const SendTxSchemaOrError = {
+    oneOf: [
+        SendTxSchema,
+        {
+            type: 'object',
+            properties: {
+                error: {
+                    type: 'object',
+                    properties: {
+                        message: { type: 'string' },
+                    },
+                    required: ['message'],
+                },
+            },
+            required: ['error'],
         },
-        dbSizeFromColumns: { type: 'number' },
-        dbColumns: {
-            type: 'array',
-            items: InternalStateColumnSchema,
-        },
-        about: { type: 'string' },
-    },
-    required: [
-        'coin',
-        'network',
-        'host',
-        'version',
-        'gitCommit',
-        'buildTime',
-        'syncMode',
-        'initialSync',
-        'inSync',
-        'bestHeight',
-        'lastBlockTime',
-        'inSyncMempool',
-        'lastMempoolTime',
-        'mempoolSize',
-        'decimals',
-        'dbSize',
-        'about',
     ],
-};
-
-export const SystemInfoSchema = {
-    type: 'object',
-    properties: {
-        blockbook: BlockbookInfoSchema,
-        backend: BackendInfoSchema,
-    },
-    required: ['blockbook', 'backend'],
 };
 
 export const AvailableVsCurrenciesSchema = {
@@ -562,6 +601,10 @@ export const AvailableVsCurrenciesSchema = {
     required: ['available_currencies'],
 };
 
+export const AvailableVsCurrenciesSchemaOrError = {
+    oneOf: [AvailableVsCurrenciesSchema, ErrorSchema],
+};
+
 export const FiatTickerSchema = {
     type: 'object',
     properties: {
@@ -575,22 +618,34 @@ export const FiatTickerSchema = {
     required: ['rates'],
 };
 
-export const SendTxSchema = {
-    type: 'object',
-    properties: {
-        result: { type: 'string' },
-        error: {
-            type: 'object',
-            properties: { message: { type: 'string' } },
-            required: ['message'],
-        },
-    },
+export const FiatTickerSchemaOrError = {
+    oneOf: [FiatTickerSchema, ErrorSchema],
 };
 
-export const GetBlockHashSchema = {
+export const BalanceHistorySchema = {
     type: 'object',
-    properties: { blockHash: { type: 'string' } },
-    required: ['blockHash'],
+    properties: {
+        time: { type: 'number' },
+        txs: { type: 'number' },
+        received: { type: 'string' },
+        sent: { type: 'string' },
+        sentToSelf: { type: 'string' },
+        rates: {
+            type: 'object',
+            additionalProperties: { type: 'number' },
+        },
+        txid: { type: 'string' },
+    },
+    required: ['time', 'txs', 'received', 'sent', 'sentToSelf'],
+};
+
+export const BalanceHistoryArraySchema = {
+    type: 'array',
+    items: BalanceHistorySchema,
+};
+
+export const BalanceHistoryArraySchemaOrError = {
+    oneOf: [BalanceHistoryArraySchema, ErrorSchema],
 };
 
 export const EstimateFeesSchema = {
@@ -599,20 +654,9 @@ export const EstimateFeesSchema = {
         result: {
             type: 'string',
         },
-        error: {
-            type: 'string',
-        },
     },
 };
 
-export const RawBlockSchema = {
-    type: 'object',
-    properties: {
-        hex: {
-            type: 'string',
-        },
-        error: {
-            type: 'string',
-        },
-    },
+export const EstimateFeesSchemaOrError = {
+    oneOf: [EstimateFeesSchema, ErrorSchema],
 };

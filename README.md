@@ -1,5 +1,7 @@
 # Blockbook Fetcher
 
+[![NPM Version](https://img.shields.io/npm/v/blockbook-fetcher)](https://www.npmjs.com/package/blockbook-fetcher)
+
 Blockbook API fetcher for Browser / Node.js with AJV schema validator written in TypeScript
 
 ### Features
@@ -14,6 +16,10 @@ Blockbook API fetcher for Browser / Node.js with AJV schema validator written in
 
 ### Documentation / Example usage
 
-Since the code is really simple I recommend reading the source code `./src/blockbook.ts` itself.
+Since the code is really simple I recommend reading the source code [./src/blockbook.ts](./src/blockbook.ts) itself.
 
-Refer test cases under `./test` or refer `./example.html` of how it could be used.
+Refer test cases under `./test` or refer [./example.html](./example.html) of how it could be used.
+
+### LICENSE
+
+MIT License, see [./LICENSE](./LICENSE)

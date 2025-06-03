@@ -14,17 +14,17 @@ import type {
 import { ajv } from './ajv';
 import {
     SystemInfoSchema,
-    BlockSchema,
-    TxSchema,
-    AddressSchema,
-    UtxoArraySchema,
-    BalanceHistoryArraySchema,
-    AvailableVsCurrenciesSchema,
-    FiatTickerSchema,
-    SendTxSchema,
     GetBlockHashSchema,
-    EstimateFeesSchema,
-    RawBlockSchema,
+    TxSchemaOrError,
+    AddressSchemaOrError,
+    UtxoArraySchemaOrError,
+    BlockSchemaOrError,
+    RawBlockSchemaOrError,
+    SendTxSchemaOrError,
+    AvailableVsCurrenciesSchemaOrError,
+    FiatTickerSchemaOrError,
+    BalanceHistoryArraySchemaOrError,
+    EstimateFeesSchemaOrError,
 } from './blockbook-schemas';
 
 export const DEFAULT_TIMEOUT = 60000;
@@ -49,7 +49,7 @@ export async function fetchAndValidate<T>(
     });
 
     if (!resp.ok) {
-        throw new Error(`Failed to query Blockbook: ${resp.status} ${resp.statusText}`);
+        throw new Error(`Failed to query Blockbook: ${resp.statusText}`);
     }
 
     const json = await resp.json();
@@ -113,6 +113,11 @@ export interface GetBalanceHistoryOpts {
     groupBy?: number;
 }
 
+export interface GetUtxoOpts {
+    confirmed?: boolean;
+    gap?: number;
+}
+
 /**
  * Blockbook REST API class with Ajv validation for all endpoints.
  */
@@ -138,11 +143,7 @@ export class Blockbook {
     /** GET /api/status */
     async getStatus(): Promise<SystemInfo> {
         const validate = ajv.compile<SystemInfo>(SystemInfoSchema);
-        return fetchAndValidate<SystemInfo>(
-            `${this.baseUrl}/api/status`,
-            this.fetchOptions,
-            validate,
-        );
+        return fetchAndValidate<SystemInfo>(`${this.baseUrl}/api/v2`, this.fetchOptions, validate);
     }
 
     /** GET /api/v2/block-index/<block height> */
@@ -150,6 +151,7 @@ export class Blockbook {
         const validate = !this.disableTypeValidation
             ? ajv.compile<{ blockHash: string }>(GetBlockHashSchema)
             : undefined;
+
         return fetchAndValidate<{ blockHash: string }>(
             `${this.baseUrl}/api/v2/block-index/${blockHeight}`,
             this.fetchOptions,
@@ -158,13 +160,22 @@ export class Blockbook {
     }
 
     /** GET /api/v2/tx/<txid> */
-    async getTransaction(txid: string): Promise<Tx> {
-        const validate = !this.disableTypeValidation ? ajv.compile<Tx>(TxSchema) : undefined;
-        return fetchAndValidate<Tx>(
-            `${this.baseUrl}/api/v2/tx/${txid}`,
+    async getTransaction(txid: string, spending?: boolean): Promise<Tx> {
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<Tx | { error: string }>(TxSchemaOrError)
+            : undefined;
+
+        const result = await fetchAndValidate<Tx | { error: string }>(
+            `${this.baseUrl}/api/v2/tx/${txid}${toQueryString({ spending })}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as Tx;
     }
 
     /** GET /api/v2/tx-specific/<txid> */
@@ -183,70 +194,104 @@ export class Blockbook {
     /** GET /api/v2/address/<address> */
     async getAddress(address: string, opts?: GetAddressOpts): Promise<Address> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<Address>(AddressSchema)
+            ? ajv.compile<Address | { error: string }>(AddressSchemaOrError)
             : undefined;
-        return fetchAndValidate<Address>(
+
+        const result = await fetchAndValidate<Address | { error: string }>(
             `${this.baseUrl}/api/v2/address/${address}${toQueryString(opts)}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as Address;
     }
 
     /** GET /api/v2/xpub/<xpub|descriptor> */
     async getXpub(xpubOrDescriptor: string, opts?: GetXpubOpts): Promise<Address> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<Address>(AddressSchema)
+            ? ajv.compile<Address | { error: string }>(AddressSchemaOrError)
             : undefined;
-        return fetchAndValidate<Address>(
+
+        const result = await fetchAndValidate<Address | { error: string }>(
             `${this.baseUrl}/api/v2/xpub/${xpubOrDescriptor}${toQueryString(opts)}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as Address;
     }
 
     /** GET /api/v2/utxo/<addr or xpub or descriptor> */
-    async getUtxo(addrOrXpubOrDesc: string, confirmed?: boolean): Promise<Utxo[]> {
+    async getUtxo(addrOrXpubOrDesc: string, opts?: GetUtxoOpts): Promise<Utxo[]> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<Utxo[]>(UtxoArraySchema)
+            ? ajv.compile<Utxo[] | { error: string }>(UtxoArraySchemaOrError)
             : undefined;
-        return fetchAndValidate<Utxo[]>(
-            `${this.baseUrl}/api/v2/utxo/${addrOrXpubOrDesc}${toQueryString({ confirmed })}`,
+
+        const result = await fetchAndValidate<Utxo[] | { error: string }>(
+            `${this.baseUrl}/api/v2/utxo/${addrOrXpubOrDesc}${toQueryString(opts)}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as Utxo[];
     }
 
     /** GET /api/v2/block/<block height|block hash> */
     async getBlock(blockHeightOrHash: string | number, page?: number): Promise<Block> {
-        const validate = !this.disableTypeValidation ? ajv.compile<Block>(BlockSchema) : undefined;
-        return fetchAndValidate<Block>(
+        const validate = !this.disableTypeValidation
+            ? ajv.compile<Block | { error: string }>(BlockSchemaOrError)
+            : undefined;
+
+        const result = await fetchAndValidate<Block | { error: string }>(
             `${this.baseUrl}/api/v2/block/${blockHeightOrHash}${toQueryString({ page })}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as Block;
     }
 
     /** GET /api/v2/rawblock/<block height|block hash> */
     async getRawBlock(blockHeightOrHash: string | number): Promise<string> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<{ hex?: string; error?: string }>(RawBlockSchema)
+            ? ajv.compile<{ hex?: string; error?: string }>(RawBlockSchemaOrError)
             : undefined;
+
         const { hex, error } = await fetchAndValidate<{ hex?: string; error?: string }>(
             `${this.baseUrl}/api/v2/rawblock/${blockHeightOrHash}`,
             this.fetchOptions,
             validate,
         );
+
         if (error) {
-            throw new Error(JSON.stringify(error));
+            throw new Error(error);
         }
+
         return hex as string;
     }
 
     /** POST /api/v2/sendtx/ */
     async sendTransaction(txhex: string): Promise<string> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<{ result?: string; error?: { message: string } }>(SendTxSchema)
+            ? ajv.compile<{ result?: string; error?: { message: string } }>(SendTxSchemaOrError)
             : undefined;
+
         const { result, error } = await fetchAndValidate<{
             result?: string;
             error?: { message: string };
@@ -263,34 +308,52 @@ export class Blockbook {
             },
             validate,
         );
+
         if (error) {
-            throw new Error(JSON.stringify(error));
+            throw new Error(error?.message || JSON.stringify(error));
         }
+
         return result as string;
     }
 
     /** GET /api/v2/tickers-list[?timestamp=] */
-    async getTickersList(timestamp?: number): Promise<AvailableVsCurrencies> {
+    async getTickersList(timestamp: number): Promise<AvailableVsCurrencies> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<AvailableVsCurrencies>(AvailableVsCurrenciesSchema)
+            ? ajv.compile<AvailableVsCurrencies | { error: string }>(
+                  AvailableVsCurrenciesSchemaOrError,
+              )
             : undefined;
-        return fetchAndValidate<AvailableVsCurrencies>(
+
+        const result = await fetchAndValidate<AvailableVsCurrencies | { error: string }>(
             `${this.baseUrl}/api/v2/tickers-list${toQueryString({ timestamp })}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as AvailableVsCurrencies;
     }
 
     /** GET /api/v2/tickers[?currency=currency&timestamp=timestamp] */
     async getTickers(currency?: string, timestamp?: number): Promise<FiatTicker> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<FiatTicker>(FiatTickerSchema)
+            ? ajv.compile<FiatTicker | { error: string }>(FiatTickerSchemaOrError)
             : undefined;
-        return fetchAndValidate<FiatTicker>(
+
+        const result = await fetchAndValidate<FiatTicker | { error: string }>(
             `${this.baseUrl}/api/v2/tickers${toQueryString({ currency, timestamp })}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as FiatTicker;
     }
 
     /** GET /api/v2/balancehistory/<XPUB | address>?...  */
@@ -299,27 +362,37 @@ export class Blockbook {
         opts?: GetBalanceHistoryOpts,
     ): Promise<BalanceHistory[]> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<BalanceHistory[]>(BalanceHistoryArraySchema)
+            ? ajv.compile<BalanceHistory[] | { error: string }>(BalanceHistoryArraySchemaOrError)
             : undefined;
-        return fetchAndValidate<BalanceHistory[]>(
+
+        const result = await fetchAndValidate<BalanceHistory[] | { error: string }>(
             `${this.baseUrl}/api/v2/balancehistory/${addrOrXpub}${toQueryString(opts)}`,
             this.fetchOptions,
             validate,
         );
+
+        if ((result as { error?: string })?.error) {
+            throw new Error((result as { error: string })?.error);
+        }
+
+        return result as BalanceHistory[];
     }
 
     /** GET /api/v2/estimatefee/<blocks> */
     async estimateFee(blocks = 1): Promise<string> {
         const validate = !this.disableTypeValidation
-            ? ajv.compile<{ result?: string; error?: string }>(EstimateFeesSchema)
+            ? ajv.compile<{ result?: string; error?: string }>(EstimateFeesSchemaOrError)
             : undefined;
+
         const { result, error } = await fetchAndValidate<{
             result?: string;
             error?: string;
         }>(`${this.baseUrl}/api/v2/estimatefee/${blocks}`, this.fetchOptions, validate);
+
         if (error) {
-            throw new Error(JSON.stringify(error));
+            throw new Error(error);
         }
+
         return result as string;
     }
 }

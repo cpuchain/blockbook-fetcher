@@ -4,7 +4,6 @@ import { Blockbook, sleep } from '../src';
 import type { Tx, Block, Address, BalanceHistory, FiatTicker } from '../src';
 
 // Sample ETH mainnet values (update with recent values as needed)
-const TEST_ETH_TICKER = 'ETH';
 const TEST_ETH_TXID = '0x4658906fd4e398ec9533a90f0add25c83608cc7561763f38a1d02d900166e7e0';
 const TEST_ETH_ADDR = '0x396343362be2A4dA1cE0C1C210945346fb82Aa49';
 
@@ -93,7 +92,7 @@ describe('Blockbook Ethereum API', () => {
     });
 
     it('getTickers returns ETH price in USD', async () => {
-        const ticker: FiatTicker = await blockbook.getTickers(TEST_ETH_TICKER);
+        const ticker: FiatTicker = await blockbook.getTickers('usd');
         assert.ok(typeof ticker.rates.usd === 'number', 'ETH/USD price is a number');
         assert.ok(ticker.ts && ticker.ts > 1_600_000_000, 'Timestamp is plausible');
     });
