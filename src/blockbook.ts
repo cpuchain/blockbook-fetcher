@@ -9,9 +9,9 @@ import type {
     BalanceHistory,        // /api/v2/balancehistory
     AvailableVsCurrencies, // /api/v2/tickers-list
     FiatTicker,            // /api/v2/tickers
-} from './blockbook-api';
+} from './blockbook-api.js';
 /* eslint-enable prettier/prettier */
-import { ajv } from './ajv';
+import { ajv } from './ajv.js';
 import {
     SystemInfoSchema,
     GetBlockHashSchema,
@@ -25,7 +25,7 @@ import {
     FiatTickerSchemaOrError,
     BalanceHistoryArraySchemaOrError,
     EstimateFeesSchemaOrError,
-} from './blockbook-schemas';
+} from './blockbook-schemas.js';
 
 export const DEFAULT_TIMEOUT = 60000;
 

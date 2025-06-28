@@ -364,7 +364,7 @@ export const ContractInfoSchema = {
         createdInBlock: { type: 'number' },
         destructedInBlock: { type: 'number' },
     },
-    required: ['type', 'standard', 'contract', 'name', 'symbol', 'decimals'],
+    //required: ['type', 'standard', 'contract', 'name', 'symbol', 'decimals'],
 };
 
 export const TokenSchema = {
@@ -392,7 +392,7 @@ export const TokenSchema = {
         totalReceived: { type: 'string' },
         totalSent: { type: 'string' },
     },
-    required: ['type', 'standard', 'name', 'transfers', 'decimals'],
+    //required: ['type', 'standard', 'name', 'transfers', 'decimals'],
 };
 
 export const AddressSchema = {

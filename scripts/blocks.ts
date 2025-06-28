@@ -1,5 +1,5 @@
 /** Iterate through blocks to see if our schema validator works */
-import { Blockbook, sleep, Tx } from '../src';
+import { Blockbook, sleep, Tx } from '../src/index.js';
 
 async function main() {
     const blockbook = new Blockbook('https://ltc1.trezor.io');

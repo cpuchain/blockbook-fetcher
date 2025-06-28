@@ -1,4 +1,4 @@
-import _Ajv from 'ajv';
+import { Ajv as _Ajv } from 'ajv';
 
 // Singleton Ajv instance
 const Ajv =
